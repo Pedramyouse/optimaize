@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Modern Portfolio | Developer & Designer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="description" content="Professional portfolio showcasing web development and design work with modern animations and technologies">
+    <script>
+      (function() {
+        function getInitialTheme() {
+          try {
+            const persistedColorPreference = window.localStorage.getItem('theme');
+            if (typeof persistedColorPreference === 'string') { // Check if it's a string
+              return persistedColorPreference;
+            }
+          } catch (e) {
+            console.warn('Failed to read theme from localStorage', e);
+          }
+          try {
+            const mql = window.matchMedia('(prefers-color-scheme: dark)');
+            if (mql.matches) {
+              return 'dark';
+            }
+          } catch (e) {
+            console.warn('Failed to read prefers-color-scheme', e);
+          }
+          return 'light'; // Default theme if nothing else is found
+        }
+
+        const theme = getInitialTheme();
+        // console.log('Initial theme determined by inline script:', theme);
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          // document.documentElement.classList.remove('dark'); // Ensure dark is removed if theme is light
+          // For Tailwind, if 'dark' class is not present, it defaults to light theme styles, so explicit removal might not be needed if dark is the only class toggled.
+          // However, to be safe and clear:
+          document.documentElement.classList.remove('dark');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
