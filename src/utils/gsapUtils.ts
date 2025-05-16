@@ -7,37 +7,59 @@ import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
 // Register all plugins once
 gsap.registerPlugin(ScrollTrigger, TextPlugin, SplitText, ScrollToPlugin);
 
-// Store active triggers by component ID to enable targeted cleanup
+// Store active triggers by component ID
 const activeTriggersMap: Record<string, Set<ScrollTrigger>> = {};
 
-/**
- * Creates a ScrollTrigger and registers it with the component for cleanup
- * @param componentId Unique ID for the component using the trigger
- * @param config ScrollTrigger configuration
- * @returns The created ScrollTrigger instance
- */
+// Throttle function for scroll events
+const throttle = (func: Function, limit: number) => {
+  let inThrottle: boolean;
+  return function(this: any, ...args: any[]) {
+    if (!inThrottle) {
+      func.apply(this, args);
+      inThrottle = true;
+      setTimeout(() => inThrottle = false, limit);
+    }
+  };
+};
+
+// Performance optimized defaults
+export const performanceDefaults = {
+  ease: "power3.out",
+  duration: 0.6,
+  force3D: true,
+  overwrite: 'auto' as gsap.TweenVars['overwrite'],
+  lazy: true,
+  fastScrollEnd: true
+};
+
+// Create ScrollTrigger with automatic cleanup
 export const createScrollTrigger = (componentId: string, config: ScrollTrigger.Vars): ScrollTrigger => {
   if (!activeTriggersMap[componentId]) {
     activeTriggersMap[componentId] = new Set();
   }
-  
-  const trigger = ScrollTrigger.create(config);
+
+  const trigger = ScrollTrigger.create({
+    ...config,
+    onRefresh: (self) => {
+      if (config.onRefresh) config.onRefresh(self);
+    },
+    onKill: (self) => {
+      if (config.onKill) config.onKill(self);
+      activeTriggersMap[componentId]?.delete(self);
+    }
+  });
+
   activeTriggersMap[componentId].add(trigger);
-  
   return trigger;
 };
 
-/**
- * Creates a GSAP timeline with ScrollTrigger configuration and registers it for cleanup
- * @param componentId Unique ID for the component using the timeline
- * @param scrollTriggerConfig Optional ScrollTrigger configuration
- * @returns A GSAP timeline instance
- */
+// Create optimized timeline with ScrollTrigger
 export const createScrollTimeline = (
-  componentId: string, 
+  componentId: string,
   scrollTriggerConfig?: ScrollTrigger.Vars
 ): gsap.core.Timeline => {
   const timeline = gsap.timeline({
+    defaults: performanceDefaults,
     scrollTrigger: scrollTriggerConfig ? {
       ...scrollTriggerConfig,
       onRefresh: (self) => {
@@ -45,129 +67,64 @@ export const createScrollTimeline = (
           activeTriggersMap[componentId] = new Set();
         }
         activeTriggersMap[componentId].add(self);
-        
-        // Call the original onRefresh if it exists
-        if (scrollTriggerConfig.onRefresh) {
-          scrollTriggerConfig.onRefresh(self);
-        }
+        if (scrollTriggerConfig.onRefresh) scrollTriggerConfig.onRefresh(self);
       }
     } : undefined
   });
-  
+
   return timeline;
 };
 
-/**
- * Performs efficient cleanup of all ScrollTriggers associated with a component
- * @param componentId Unique ID for the component to clean up
- */
+// Cleanup function
 export const cleanupScrollTriggers = (componentId: string): void => {
   if (activeTriggersMap[componentId]) {
-    activeTriggersMap[componentId].forEach(trigger => {
-      trigger.kill();
-    });
+    activeTriggersMap[componentId].forEach(trigger => trigger.kill());
     activeTriggersMap[componentId].clear();
     delete activeTriggersMap[componentId];
   }
 };
 
-/**
- * Creates staggered animations with reduced CPU usage
- * @param elements Elements to animate
- * @param fromVars GSAP from vars
- * @param staggerAmount Time between each animation
- * @param componentId Component ID for cleanup
- * @param scrollTriggerConfig Optional ScrollTrigger configuration
- */
+// Optimized staggered animations
 export const createStaggeredAnimation = (
-  elements: (Element | null)[],
+  elements: Element[],
   fromVars: gsap.TweenVars,
   staggerAmount: number = 0.1,
   componentId: string,
   scrollTriggerConfig?: ScrollTrigger.Vars
 ): void => {
-  // Filter out null elements
-  const validElements = elements.filter(Boolean) as Element[];
-  
-  if (validElements.length === 0) return;
-  
+  if (elements.length === 0) return;
+
   const tl = createScrollTimeline(componentId, scrollTriggerConfig);
   
-  tl.from(validElements, {
+  tl.from(elements, {
     ...fromVars,
-    stagger: staggerAmount,
-    force3D: true, // Hardware acceleration
-    overwrite: 'auto',
+    stagger: {
+      amount: staggerAmount,
+      ease: "power1.inOut"
+    },
+    ...performanceDefaults
   });
 };
 
-/**
- * Optimizes performance for splitText animations
- * @param element Element containing text to split
- * @param splitType Type of split (chars, words, lines)
- * @param componentId Component ID for cleanup
- * @returns Split text instance
- */
+// Throttled scroll handler
+export const createThrottledScrollHandler = (
+  handler: (event: Event) => void,
+  delay: number = 100
+): (event: Event) => void => {
+  return throttle(handler, delay);
+};
+
+// Optimized SplitText with cleanup
 export const createOptimizedSplitText = (
-  element: Element | null,
-  splitType: 'chars' | 'words' | 'lines' | 'all' = 'words',
-  componentId: string
-): SplitText | null => {
-  if (!element) return null;
-  
-  // Use the SplitText API
-  const splitText = new SplitText(element, {
-    type: splitType,
-    linesClass: "split-line",
-    wordsClass: "split-word",
-    charsClass: "split-char",
-  });
-  
-  // Add cleanup function to ensure SplitText instances are properly disposed
-  const originalRevert = splitText.revert.bind(splitText);
-  splitText.revert = () => {
-    originalRevert();
-    if (componentId && activeTriggersMap[componentId]) {
-      // Some cleanup specific to this instance if needed
-    }
-  };
-  
-  return splitText;
-};
-
-// Performance optimized defaults
-export const performanceDefaults = {
-  ease: "power3.out", // More efficient than elastic or bounce
-  duration: 0.6,      // Shorter durations use less CPU
-  force3D: true,      // Hardware acceleration
-  overwrite: 'auto' as gsap.TweenVars['overwrite'],
-  lazy: true,         // Optimized rendering
-  fastScrollEnd: true // Performance for ScrollTrigger
-};
-
-// Throttled scroll function to reduce scroll event impact
-export const createThrottledScrollTrigger = (
-  componentId: string,
-  config: ScrollTrigger.Vars,
-  throttleAmount: number = 0.2  // seconds
-): ScrollTrigger => {
-  let lastScrollTime = 0;
-  const now = Date.now();
-  
-  const throttledConfig = {
+  element: Element,
+  config: gsap.SplitText.Vars = { type: "words,chars" }
+): SplitText => {
+  const split = new SplitText(element, {
     ...config,
-    onUpdate: (self: ScrollTrigger) => {
-      const currentTime = Date.now();
-      if (currentTime - lastScrollTime > throttleAmount * 1000) {
-        lastScrollTime = currentTime;
-        if (config.onUpdate) {
-          config.onUpdate(self);
-        }
-      }
-    }
-  };
-  
-  return createScrollTrigger(componentId, throttledConfig);
+    reduceWhiteSpace: false
+  });
+
+  return split;
 };
 
 export default {
@@ -175,7 +132,7 @@ export default {
   createScrollTimeline,
   cleanupScrollTriggers,
   createStaggeredAnimation,
+  createThrottledScrollHandler,
   createOptimizedSplitText,
-  performanceDefaults,
-  createThrottledScrollTrigger
-}; 
+  performanceDefaults
+};
