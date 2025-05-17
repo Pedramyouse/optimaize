@@ -111,13 +111,12 @@ const ServiceCard: React.FC<ServiceProps> = ({ icon, title, description, index, 
   return (
     <div
       ref={cardRef}
-      className="service-item group p-10 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2"
+      className="service-item group p-10 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 z-20 will-change-transform-opacity"
       style={{ 
         backgroundColor: '#121212', 
         border: '1px solid rgba(255, 255, 255, 0.1)',
         color: 'white',
         position: 'relative',
-        zIndex: 'var(--z-content-raised)',
         display: 'block',
         width: '100%',
         height: 'auto',
@@ -127,20 +126,21 @@ const ServiceCard: React.FC<ServiceProps> = ({ icon, title, description, index, 
     >
       <div 
         ref={iconRef}
-        className="mb-6 transform group-hover:scale-110 transition-transform duration-300"
+        className="mb-6 transform group-hover:scale-110 transition-transform duration-300 will-change-transform-opacity"
         style={{ display: 'block', visibility: 'visible' }}
       >
         {icon}
       </div>
       <h3 
         ref={titleRef}
-        className="text-2xl font-bold mb-4" 
+        className="text-2xl font-bold mb-4 will-change-transform-opacity"
         style={{ color: 'white', display: 'block', visibility: 'visible' }}
       >
         {title}
       </h3>
       <p 
         ref={descRef}
+        className="will-change-transform-opacity"
         style={{ color: 'rgba(255, 255, 255, 0.8)', display: 'block', visibility: 'visible' }}
       >
         {description}
@@ -187,16 +187,25 @@ const ServicesSection: React.FC<ServicesSectionProps> = ({ id, style }) => {
       { 
         scale: 0.5, 
         opacity: 0, 
-        x: (index) => index === 0 ? -50 : 50 // First decoration from left, second from right
+        x: (index) => index === 0 ? -50 : 50
       }, 
       {
         scale: 1, 
         opacity: 1, 
         x: 0, 
-        duration: 1.2, 
-        ease: performanceDefaults.ease,
+        ...performanceDefaults,
+        duration: 0.8,
         stagger: 0.1,
-        force3D: true
+        onStart: () => {
+          [decoration1, decoration2].forEach(el => {
+            el?.classList.add('will-change-transform-opacity');
+          });
+        },
+        onComplete: () => {
+          [decoration1, decoration2].forEach(el => {
+            el?.classList.remove('will-change-transform-opacity');
+          });
+        }
       }
     );
     
@@ -210,11 +219,10 @@ const ServicesSection: React.FC<ServicesSectionProps> = ({ id, style }) => {
       {
         y: 0,
         opacity: 1,
-        duration: 0.5,
-        ease: performanceDefaults.ease,
-        force3D: true
+        ...performanceDefaults,
+        duration: 0.5, 
       },
-      "-=0.9" // Start slightly before decorations finish
+      "-=0.7" 
     );
     
     mainTl.fromTo(
@@ -226,11 +234,10 @@ const ServicesSection: React.FC<ServicesSectionProps> = ({ id, style }) => {
       {
         y: 0,
         opacity: 1,
-        duration: 0.5,
-        ease: performanceDefaults.ease,
-        force3D: true
+        ...performanceDefaults,
+        duration: 0.5, 
       },
-      "-=0.3" // Overlap with previous animation
+      "-=0.3"
     );
     
     // Animate subheading
@@ -243,14 +250,12 @@ const ServicesSection: React.FC<ServicesSectionProps> = ({ id, style }) => {
       {
         y: 0, 
         opacity: 1, 
-        duration: 0.6, 
-        ease: performanceDefaults.ease,
-        force3D: true
+        ...performanceDefaults 
       },
-      "-=0.3" // Overlap with previous animation
+      "-=0.3"
     );
     
-    // Animate cards container - just make visible and let cards handle their own animations
+    // Animate cards container
     mainTl.fromTo(
       cardsContainer,
       {
@@ -258,9 +263,10 @@ const ServicesSection: React.FC<ServicesSectionProps> = ({ id, style }) => {
       },
       {
         opacity: 1,
-        duration: 0.3
+        ...performanceDefaults,
+        duration: 0.3, 
       },
-      "-=0.3" // Overlap with previous animation
+      "-=0.3"
     );
     
     // Clean up properly to prevent memory leaks
@@ -291,16 +297,15 @@ const ServicesSection: React.FC<ServicesSectionProps> = ({ id, style }) => {
     <section 
       ref={sectionRef} 
       id={id}
-      className="py-32 bg-muted/50 relative overflow-visible"
+      className="py-32 bg-muted/50 relative overflow-visible z-10"
       style={{ 
-        position: 'relative', 
-        zIndex: 'var(--z-section)',
+        position: 'relative',
         visibility: 'visible',
         display: 'block',
         ...style
       }}
     >
-      <div className="container mx-auto px-4 md:px-8" style={{ visibility: 'visible', position: 'relative', zIndex: 'var(--z-section-content)' }}>
+      <div className="container mx-auto px-4 md:px-8 z-15" style={{ visibility: 'visible', position: 'relative' }}>
         <div className="text-center mb-20" style={{ visibility: 'visible' }}>
           <div 
             ref={headingRef}
@@ -320,8 +325,8 @@ const ServicesSection: React.FC<ServicesSectionProps> = ({ id, style }) => {
         
         <div 
           ref={cardsContainerRef}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10" 
-          style={{ visibility: 'visible', position: 'relative', zIndex: 'var(--z-section-content)' }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 z-15" 
+          style={{ visibility: 'visible', position: 'relative' }}
         >
           {services.map((service, index) => (
             <ServiceCard
@@ -339,13 +344,11 @@ const ServicesSection: React.FC<ServicesSectionProps> = ({ id, style }) => {
       {/* Background decoration */}
       <div 
         ref={decorationRef1}
-        className="absolute -top-20 -right-20 w-96 h-96 bg-primary/5 rounded-full blur-3xl" 
-        style={{ zIndex: 'var(--z-background-decorations)' }}
+        className="absolute -top-20 -right-20 w-96 h-96 bg-primary/5 rounded-full blur-3xl z-5" 
       ></div>
       <div 
         ref={decorationRef2}
-        className="absolute -bottom-20 -left-20 w-96 h-96 bg-accent/5 rounded-full blur-3xl" 
-        style={{ zIndex: 'var(--z-background-decorations)' }}
+        className="absolute -bottom-20 -left-20 w-96 h-96 bg-accent/5 rounded-full blur-3xl z-5" 
       ></div>
     </section>
   );

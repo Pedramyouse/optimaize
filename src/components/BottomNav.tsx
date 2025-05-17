@@ -1,99 +1,98 @@
 import React, { useEffect, useRef } from 'react';
 import { Home, User, FolderOpen, Mail } from 'lucide-react';
 import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-// Register ScrollTrigger with GSAP
-if (typeof window !== 'undefined') {
-  gsap.registerPlugin(ScrollTrigger);
-}
+import { createScrollTrigger, cleanupScrollTriggers, performanceDefaults } from '../utils/gsapUtils';
 
 interface BottomNavProps {
   onSectionClick: (id: string) => void;
 }
+
+const BOTTOMNAV_COMPONENT_ID = 'bottom-nav';
 
 const BottomNav: React.FC<BottomNavProps> = ({ onSectionClick }) => {
   const navRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
-    if (!navRef.current || !containerRef.current) return;
+    const navElement = navRef.current;
+    const containerElement = containerRef.current;
+
+    if (!navElement || !containerElement) return;
     
-    // Initial animation effect for the nav
-    gsap.set(containerRef.current, {
+    gsap.set(containerElement, {
       rotateX: 0,
       transformPerspective: 600,
-      transformStyle: "preserve-3d"
+      transformStyle: "preserve-3d",
+      ...performanceDefaults
     });
     
-    // Create scroll-triggered animation
-    ScrollTrigger.create({
+    createScrollTrigger(BOTTOMNAV_COMPONENT_ID, {
       trigger: "body",
       start: "top top",
       end: "bottom bottom",
       onUpdate: (self) => {
-        // Calculate rotation based on scroll position
-        // Subtle rotation effect - max 5 degrees
-        const scrollDirection = self.direction > 0 ? 1 : -1; // 1 for down, -1 for up
+        const scrollDirection = self.direction > 0 ? 1 : -1;
         const scrollSpeed = Math.abs(self.getVelocity() / 1000);
-        const maxTilt = 5; // Maximum tilt in degrees
-        
-        // Apply tilt effect based on scroll speed and direction
+        const maxTilt = 5;
         const tiltAmount = Math.min(scrollSpeed * scrollDirection, maxTilt);
         
-        // Apply the rotation to the nav container
-        gsap.to(containerRef.current, {
+        gsap.to(containerElement, {
           rotateX: tiltAmount,
+          ...performanceDefaults,
           duration: 0.5,
-          ease: "power2.out",
         });
         
-        // Add subtle scale effect based on scroll position
-        const scale = 1 - (Math.abs(tiltAmount) / 100); // Subtle scale change
-        gsap.to(containerRef.current, {
+        const scale = 1 - (Math.abs(tiltAmount) / 100);
+        gsap.to(containerElement, {
           scale: scale,
+          ...performanceDefaults,
           duration: 0.5,
-          ease: "power2.out",
         });
         
-        // Add subtle y-position change based on scroll direction
-        const yOffset = scrollDirection * 2; // Small Y movement
-        gsap.to(navRef.current, {
+        const yOffset = scrollDirection * 2;
+        gsap.to(navElement, {
           y: yOffset,
+          ...performanceDefaults,
           duration: 0.5,
-          ease: "power2.out",
         });
       }
     });
     
-    // Create a hover effect for added interactivity
-    containerRef.current.addEventListener('mouseenter', () => {
-      gsap.to(containerRef.current, {
+    const handleMouseEnter = () => {
+      gsap.to(containerElement, {
         scale: 1.05,
+        ...performanceDefaults,
         duration: 0.3,
         ease: "power1.out"
       });
-    });
+    };
     
-    containerRef.current.addEventListener('mouseleave', () => {
-      gsap.to(containerRef.current, {
+    const handleMouseLeave = () => {
+      gsap.to(containerElement, {
         scale: 1,
+        ...performanceDefaults,
         duration: 0.3,
         ease: "power1.out"
       });
-    });
+    };
+
+    containerElement.addEventListener('mouseenter', handleMouseEnter);
+    containerElement.addEventListener('mouseleave', handleMouseLeave);
     
-    // Cleanup
     return () => {
-      ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+      cleanupScrollTriggers(BOTTOMNAV_COMPONENT_ID);
+      containerElement.removeEventListener('mouseenter', handleMouseEnter);
+      containerElement.removeEventListener('mouseleave', handleMouseLeave);
+      gsap.killTweensOf(containerElement);
+      gsap.killTweensOf(navElement);
     };
   }, []);
   
   return (
-    <nav ref={navRef} className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+    <nav ref={navRef} className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 will-change-transform">
       <div 
         ref={containerRef}
-        className="bg-background/60 backdrop-blur-xl border border-foreground/10 px-6 py-4 rounded-full shadow-lg"
+        className="bg-background/60 backdrop-blur-xl border border-foreground/10 px-6 py-4 rounded-full shadow-lg will-change-transform"
         style={{ transformOrigin: "center center" }}
       >
         <ul className="flex items-center gap-8">

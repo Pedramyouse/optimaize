@@ -28,8 +28,9 @@ const Cursor: React.FC = () => {
     };
 
     // Handle hover states for interactive elements
-    const handleLinkHover = (e: MouseEvent) => {
+    const handleLinkHover = (e: Event) => {
       const target = e.target as HTMLElement;
+      const cursor = cursorRef.current;
       
       if (target.tagName === 'A' || 
           target.tagName === 'BUTTON' || 
@@ -49,6 +50,7 @@ const Cursor: React.FC = () => {
     };
 
     const handleLinkLeave = () => {
+      const cursor = cursorRef.current;
       gsap.to(cursor, {
         scale: 1,
         backgroundColor: '',
@@ -59,23 +61,24 @@ const Cursor: React.FC = () => {
       cursor?.classList.remove('custom-cursor-text');
     };
 
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseenter', onMouseEnter);
-    document.addEventListener('mouseleave', onMouseLeave);
+    document.addEventListener('mousemove', onMouseMove as EventListener);
+    document.addEventListener('mouseenter', onMouseEnter as EventListener);
+    document.addEventListener('mouseleave', onMouseLeave as EventListener);
     
-    document.querySelectorAll('a, button').forEach(el => {
-      el.addEventListener('mouseenter', handleLinkHover);
-      el.addEventListener('mouseleave', handleLinkLeave);
+    const interactiveElements = document.querySelectorAll('a, button');
+    interactiveElements.forEach(el => {
+      el.addEventListener('mouseenter', handleLinkHover as EventListener);
+      el.addEventListener('mouseleave', handleLinkLeave as EventListener);
     });
 
     return () => {
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseenter', onMouseEnter);
-      document.removeEventListener('mouseleave', onMouseLeave);
+      document.removeEventListener('mousemove', onMouseMove as EventListener);
+      document.removeEventListener('mouseenter', onMouseEnter as EventListener);
+      document.removeEventListener('mouseleave', onMouseLeave as EventListener);
       
-      document.querySelectorAll('a, button').forEach(el => {
-        el.removeEventListener('mouseenter', handleLinkHover);
-        el.removeEventListener('mouseleave', handleLinkLeave);
+      interactiveElements.forEach(el => {
+        el.removeEventListener('mouseenter', handleLinkHover as EventListener);
+        el.removeEventListener('mouseleave', handleLinkLeave as EventListener);
       });
     };
   }, []);
@@ -83,7 +86,7 @@ const Cursor: React.FC = () => {
   return (
     <div 
       ref={cursorRef} 
-      className={`custom-cursor ${!isVisible ? 'custom-cursor-hidden' : ''}`}
+      className={`custom-cursor z-90 ${!isVisible ? 'custom-cursor-hidden' : ''}`}
     >
       {cursorText && <span className="text-xs font-medium">{cursorText}</span>}
     </div>

@@ -1,0 +1,30 @@
+/* Animation Optimization Utilities */
+
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
+}
+
+.will-change-transform-opacity {
+  will-change: transform, opacity;
+}
+
+.will-change-filter {
+  will-change: filter;
+}
+
+/* برای موارد خاص دیگر در صورت نیاز */
+.will-change-height {
+  will-change: height;
+}
+
+.will-change-padding {
+  will-change: padding; /* برای هدر */
+}
+
+.will-change-shadow {
+  will-change: box-shadow; /* برای هدر */
+} 

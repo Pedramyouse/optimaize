@@ -90,7 +90,7 @@ const ElementSlideGallery: React.FC = () => {
       directionChangeThreshold: 0.02,
       directionSmoothing: 0.03
     };
-
+    
     // Three.js Setup
     const canvas = canvasRef.current;
     const renderer = new THREE.WebGLRenderer({

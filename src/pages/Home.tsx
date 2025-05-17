@@ -3,13 +3,12 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { TextPlugin } from 'gsap/TextPlugin';
 import { SplitText } from 'gsap/SplitText';
 import ServicesSection from '../components/ServicesSection';
 import GallerySlider from '../components/GallerySlider';
-
-gsap.registerPlugin(ScrollTrigger, TextPlugin, SplitText);
+import {
+  performanceDefaults,
+} from '../utils/gsapUtils';
 
 // Interface for our particle type
 interface Particle {
@@ -23,6 +22,8 @@ interface Particle {
   linkedParticles: number[];
 }
 
+const HOME_COMPONENT_ID = 'home-page';
+
 const Home: React.FC = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
@@ -35,7 +36,6 @@ const Home: React.FC = () => {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
@@ -69,16 +69,13 @@ const Home: React.FC = () => {
       });
     }
     
-    // Mouse move event handler
     const handleMouseMove = (e: MouseEvent) => {
-      // Get actual mouse position relative to canvas
       const rect = canvas.getBoundingClientRect();
       setMousePosition({
         x: e.clientX - rect.left,
         y: e.clientY - rect.top
       });
     };
-    
     canvas.addEventListener('mousemove', handleMouseMove);
     
     // Animation function
@@ -166,47 +163,62 @@ const Home: React.FC = () => {
     };
   }, []);
   
-  // Original animations
+  // GSAP Text Animations
   useEffect(() => {
-    // Initial loading animation
-    const tl = gsap.timeline();
+    const titleElement = titleRef.current;
+    const subtitleElement = subtitleRef.current;
+
+    if (!titleElement) return;
+
+    const mainTimeline = gsap.timeline({
+      onStart: () => {
+        if (titleElement) titleElement.classList.add('will-change-transform-opacity', 'will-change-filter');
+        if (subtitleElement) subtitleElement.classList.add('will-change-transform-opacity');
+      },
+      onComplete: () => {
+        // For shimmer, we might want to keep will-change if it's a continuous visual effect
+        // If shimmer is very subtle or off, then remove.
+        // titleElement.classList.remove('will-change-transform-opacity', 'will-change-filter'); 
+        if (subtitleElement) subtitleElement.classList.remove('will-change-transform-opacity');
+        // Shimmer effect might need will-change to remain if it's an ongoing animation on chars
+        // If the shimmer itself is a GSAP timeline on chars, it might handle its own will-change needs or benefit from it being set.
+      }
+    });
+    let splitTitleInstance: SplitText | null = null;
+    let shimmerTimeline: gsap.core.Timeline | null = null;
+
+    splitTitleInstance = new SplitText(titleElement, { 
+      type: "chars,words", 
+      charsClass: "char individual-char will-change-transform-opacity will-change-filter",
+      wordsClass: "word will-change-transform-opacity"
+    });
     
-    // Variable to store splitTitle reference for cleanup
-    let splitTitle: SplitText | null = null;
-    
-    // Professional sleek animation for "Quantic Studio"
-    if (titleRef.current) {
-      // Split the title into words and characters for more control
-      splitTitle = new SplitText(titleRef.current, { 
-        type: "chars,words", 
-        charsClass: "char individual-char",
-        wordsClass: "word"
-      });
-      
-      const chars = splitTitle.chars;
-      const words = splitTitle.words;
-      
-      // Set initial state - everything invisible with no transforms
-      gsap.set(titleRef.current, { autoAlpha: 1 });
-      gsap.set(chars, { 
+    if (splitTitleInstance && splitTitleInstance.chars && splitTitleInstance.words) {
+      const chars = splitTitleInstance.chars;
+      const words = splitTitleInstance.words;
+
+      mainTimeline.set(titleElement, { autoAlpha: 1 });
+      mainTimeline.set(chars, { 
         autoAlpha: 0,
         y: 40,
         rotationX: -90,
-        filter: 'blur(10px)'
+        filter: 'blur(10px)',
+        ...performanceDefaults,
+        lazy: false
       });
-      
-      // Word container animation - subtle scale
-      gsap.fromTo(words, 
+
+      mainTimeline.fromTo(words, 
         { scale: 0.9 },
         { 
           scale: 1, 
+          ...performanceDefaults,
           duration: 1.8,
           ease: "power3.out",
-        }
+        }, "<"
       );
       
-      // Characters animation with staggered reveal
-      tl.to(chars, {
+      mainTimeline.to(chars, {
+        ...performanceDefaults,
         duration: 0.05,
         autoAlpha: 1,
         y: 0,
@@ -219,8 +231,8 @@ const Home: React.FC = () => {
         },
         ease: "power4.out",
       })
-      // Add a slight bounce at the end
       .to(chars, {
+        ...performanceDefaults,
         duration: 0.2,
         y: -10,
         ease: "power2.in",
@@ -230,6 +242,7 @@ const Home: React.FC = () => {
         }
       })
       .to(chars, {
+        ...performanceDefaults,
         duration: 0.3,
         y: 0,
         ease: "elastic.out(1, 0.3)",
@@ -237,123 +250,44 @@ const Home: React.FC = () => {
           each: 0.03,
           from: "start",
         },
-        // Add hover effect for each character after initial animation
         onComplete: () => {
-          // Add a minimal, elegant light shimmer effect as a continuous loop
-          const createMinimalLightEffect = () => {
-            // Create a subtle shimmer effect that moves across the text
-            const timeline = gsap.timeline({
-              repeat: -1, // Loop indefinitely
-              repeatDelay: 4 // Longer delay for minimalism
+          if (!titleElement.classList.contains('has-shimmer-listener')) {
+            titleElement.classList.add('has-shimmer-listener');
+            shimmerTimeline = gsap.timeline({ 
+              repeat: -1, 
+              repeatDelay: 4, 
+              paused: true 
             });
-            
-            // Subtle shimmer effect - very gentle color and shadow changes
-            timeline.to(chars, {
-              duration: 0.8,
-              stagger: {
-                each: 0.05,
-                from: "start",
-                grid: "auto"
-              },
-              color: "rgba(255, 255, 255, 0.95)", // Very subtle brightening
-              textShadow: "0 0 8px rgba(255, 255, 255, 0.3)", // Minimal glow
-              ease: "sine.inOut",
-              overwrite: "auto"
-            }).to(chars, {
-              duration: 0.8,
-              stagger: {
-                each: 0.05,
-                from: "start",
-                grid: "auto"
-              },
-              color: "", // Return to original color
-              textShadow: "",
-              ease: "sine.inOut",
-            });
-            
-            // Instead of the diagonal sweep element, use a simpler highlight effect
-            const highlightTimeline = gsap.timeline({
-              repeat: -1,
-              repeatDelay: 5 // Longer delay between highlights for minimalism
-            });
-            
-            // Create a minimal highlight that sweeps across the title
-            highlightTimeline.fromTo(titleRef.current, {
-              backgroundImage: "linear-gradient(90deg, transparent 0%, transparent 100%)",
-              backgroundSize: "200% 100%",
-              backgroundRepeat: "no-repeat",
-              backgroundClip: "text",
-              WebkitBackgroundClip: "text"
-            }, {
-              backgroundImage: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 10%, rgba(255,255,255,0.3) 20%, transparent 30%)",
-              backgroundPosition: "200% 0",
-              duration: 3,
-              ease: "power1.inOut"
-            });
-            
-            return () => {
-              timeline.kill();
-              highlightTimeline.kill();
-            };
-          };
-          
-          // Start the minimal light effect
-          createMinimalLightEffect();
-          
-          // Setup hover effect for individual characters
-          chars.forEach(char => {
-            char.addEventListener('mouseenter', () => {
-              gsap.to(char, { 
-                filter: 'blur(2px)', // More subtle blur
-                duration: 0.3, 
-                ease: 'sine.out' 
-              });
-            });
-            char.addEventListener('mouseleave', () => {
-              gsap.to(char, { 
-                filter: 'blur(0px)', 
-                duration: 0.3, 
-                ease: 'sine.inOut' 
-              });
-            });
-          });
+            if (splitTitleInstance && splitTitleInstance.chars) {
+              shimmerTimeline.to(splitTitleInstance.chars, { 
+                opacity: 0.7, 
+                stagger: 0.1, 
+                duration: 0.5, 
+                yoyo: true, 
+                repeat: 1 
+              }, "+=2");
+            }
+            shimmerTimeline.play();
+          }
         }
       });
     }
-    
-    // Animated typing effect for subtitle
-    if (subtitleRef.current) {
-      tl.fromTo(subtitleRef.current,
-        { autoAlpha: 0, y: 20 },
-        {
-          autoAlpha: 1,
-          y: 0,
-          duration: 1,
-          ease: "power3.out",
-        },
-        "-=1"
-      ).to(subtitleRef.current, {
-        duration: 2,
-        text: {
-          value: "Crafting digital experiences with modern technologies and minimalist design aesthetics",
-          delimiter: " "
-        },
-        ease: "none",
+
+    if (subtitleElement) {
+      mainTimeline.from(subtitleElement, {
+        opacity: 0,
+        y: 20,
+        ...performanceDefaults,
+        duration: 0.8, 
       }, "-=0.5");
     }
     
-    // Floating animation for background elements
-    gsap.to('.floating-element', {
-      y: -20,
-      duration: 2,
-      ease: "power1.inOut",
-      yoyo: true,
-      repeat: -1,
-    });
-    
     return () => {
-      ScrollTrigger.getAll().forEach(trigger => trigger.kill());
-      splitTitle?.revert();
+      mainTimeline.kill();
+      splitTitleInstance?.revert(); 
+      shimmerTimeline?.kill();
+      if (titleElement) titleElement.classList.remove('has-shimmer-listener', 'will-change-transform-opacity', 'will-change-filter');
+      if (subtitleElement) subtitleElement.classList.remove('will-change-transform-opacity');
     };
   }, []);
   

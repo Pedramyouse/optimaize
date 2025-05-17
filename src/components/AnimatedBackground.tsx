@@ -40,7 +40,7 @@ const AnimatedBackground: React.FC = () => {
   }, []);
 
   return (
-    <div ref={bgRef} className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+    <div ref={bgRef} className="fixed inset-0 z-1 overflow-hidden pointer-events-none">
       <div className="absolute inset-0 bg-gradient-to-b from-background to-transparent opacity-90" />
     </div>
   );

@@ -46,7 +46,7 @@ const LoadingScreen: React.FC = () => {
   return (
     <div 
       ref={loadingRef} 
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background"
+      className="fixed inset-0 z-100 flex flex-col items-center justify-center bg-background"
     >
       <div className="flex flex-col items-center space-y-8">
         <Code size={48} className="text-primary animate-spin-slow" />

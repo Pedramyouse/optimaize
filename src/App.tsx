@@ -37,59 +37,58 @@ function App() {
       
       const sectionId = section.id;
       const componentId = `${APP_COMPONENT_ID}-section-${sectionId}`;
+      const sectionChildren = Array.from(section.children) as HTMLElement[];
       
-      // Initial state - we'll use GSAP .set which is more efficient
-      gsap.set(section.children, {
+      gsap.set(sectionChildren, {
         y: 50,
         opacity: 0,
-        force3D: true // Hardware acceleration
+        force3D: true 
       });
 
-      // Create scroll trigger for each section using our optimized utility
       createScrollTrigger(componentId, {
         trigger: section,
         start: 'top center',
         end: 'bottom center',
-        fastScrollEnd: true, // Performance optimization
+        fastScrollEnd: true, 
         onEnter: () => {
-          // Animate section content when entering viewport
-          gsap.to(section.children, {
+          sectionChildren.forEach(child => child.classList.add('will-change-transform-opacity'));
+          gsap.to(sectionChildren, {
             y: 0,
             opacity: 1,
-            duration: performanceDefaults.duration,
-            stagger: 0.15, // Reduced from 0.2
-            ease: performanceDefaults.ease,
-            force3D: true,
-            overwrite: 'auto'
+            ...performanceDefaults,
+            duration: 0.6,
+            stagger: 0.15,
+            onComplete: () => {
+              sectionChildren.forEach(child => child.classList.remove('will-change-transform-opacity'));
+            }
           });
-          
-          // Update active nav item
           document.querySelector(`[data-section="${sectionId}"]`)?.classList.add('text-primary');
         },
         onLeaveBack: () => {
-          // Reset section content when scrolling back up - use shorter duration
-          gsap.to(section.children, {
+          sectionChildren.forEach(child => child.classList.add('will-change-transform-opacity'));
+          gsap.to(sectionChildren, {
             y: 50,
             opacity: 0,
-            duration: 0.3, // Reduced from 0.5
-            force3D: true,
-            overwrite: 'auto'
+            ...performanceDefaults,
+            duration: 0.3,
+            onComplete: () => {
+              sectionChildren.forEach(child => child.classList.remove('will-change-transform-opacity'));
+            }
           });
-          
           document.querySelector(`[data-section="${sectionId}"]`)?.classList.remove('text-primary');
         },
         onEnterBack: () => {
-          // Re-animate when scrolling back into view
-          gsap.to(section.children, {
+          sectionChildren.forEach(child => child.classList.add('will-change-transform-opacity'));
+          gsap.to(sectionChildren, {
             y: 0,
             opacity: 1,
-            duration: performanceDefaults.duration,
-            stagger: 0.15, // Reduced from 0.2
-            ease: performanceDefaults.ease,
-            force3D: true,
-            overwrite: 'auto'
+            ...performanceDefaults,
+            duration: 0.6,
+            stagger: 0.15,
+            onComplete: () => {
+              sectionChildren.forEach(child => child.classList.remove('will-change-transform-opacity'));
+            }
           });
-          
           document.querySelector(`[data-section="${sectionId}"]`)?.classList.add('text-primary');
         },
         onLeave: () => {
@@ -129,32 +128,32 @@ function App() {
         <div className="relative">
           <Cursor />
           <Header />
-          <main ref={mainRef} className="relative">
+          <main ref={mainRef} className="relative z-10">
             <section 
               id="home" 
               ref={el => sectionsRef.current[0] = el as HTMLDivElement}
-              className="min-h-screen"
+              className="min-h-screen relative z-10"
             >
               <Home />
             </section>
             <section 
               id="about"
               ref={el => sectionsRef.current[1] = el as HTMLDivElement}
-              className="min-h-screen"
+              className="min-h-screen relative z-10"
             >
               <About />
             </section>
             <section 
               id="projects"
               ref={el => sectionsRef.current[2] = el as HTMLDivElement}
-              className="min-h-screen"
+              className="min-h-screen relative z-10"
             >
               <Projects />
             </section>
             <section 
               id="contact"
               ref={el => sectionsRef.current[3] = el as HTMLDivElement}
-              className="min-h-screen"
+              className="min-h-screen relative z-10"
             >
               <Contact />
             </section>
@@ -162,7 +161,7 @@ function App() {
             <section 
               id="gallery"
               ref={el => sectionsRef.current[4] = el as HTMLDivElement}
-              className="min-h-screen"
+              className="min-h-screen relative z-10"
             >
               <Gallery />
             </section>
